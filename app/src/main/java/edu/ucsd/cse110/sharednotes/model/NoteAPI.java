@@ -11,8 +11,11 @@ import com.google.gson.Gson;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 public class NoteAPI {
     // TODO: Implement the API using OkHttp!
@@ -24,9 +27,13 @@ public class NoteAPI {
     private volatile static NoteAPI instance = null;
 
     private OkHttpClient client;
+    private static final MediaType JSON = MediaType.get("application/json;charset=utf-8");
+
+    private Gson gson ;
 
     public NoteAPI() {
         this.client = new OkHttpClient();
+        this.gson = new Gson();
     }
 
     public static NoteAPI provide() {
@@ -63,6 +70,54 @@ public class NoteAPI {
             e.printStackTrace();
             return null;
         }
+    }
+    @WorkerThread
+    public Note getNote(String title){
+        var request = new Request.Builder().url("https://sharednotes.goto.ucsd.edu/notes/" + title)
+                .method("GET",null)
+                .build();
+        try (var response = client.newCall(request).execute()) {
+            assert response.body() != null;
+            var responseJson = response.body().string();
+            return gson.fromJson(responseJson,Note.class);
+
+
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    @WorkerThread
+    public boolean putNote(Note note) {
+
+            // Serialize note object to JSON
+            var noteJson = gson.toJson(note);
+            var body = RequestBody.create(noteJson,JSON);
+            String temp = note.title.replace(" ","%20");
+
+            // Build request
+            Request request = new Request.Builder()
+                    .header("Content-type","application/json")
+                    .url("https://sharednotes.goto.ucsd.edu/notes/" + temp)
+                    .method("PUT",body)
+                    .build();
+
+            // Execute request
+           try(var response = client.newCall(request).execute()){
+               int code = response.code();
+               String message = response.message();
+               return response.isSuccessful();
+           }catch (Exception e){
+               e.printStackTrace();
+
+               return false;
+           }
+
+            // Check response code
+
+
     }
 
     @AnyThread
