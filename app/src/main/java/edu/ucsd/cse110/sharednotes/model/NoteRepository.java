@@ -103,54 +103,33 @@ public class NoteRepository {
         // TODO: Set up polling background thread (MutableLiveData?)
         // TODO: Refer to TimerService from https://github.com/DylanLukes/CSE-110-WI23-Demo5-V2.
 
+        // Start by fetching the note from the server _once_ and feeding it into MutableLiveData.
+        // Then, set up a background thread that will poll the server every 3 seconds.
 
+        // You may (but don't have to) want to cache the LiveData's for each title, so that
+        // you don't create a new polling thread every time you call getRemote with the same title.
+        // You don't need to worry about killing background threads.
+        MutableLiveData<Note> live = new MutableLiveData<>();
+        Note note = api.getNote(title);
+        if(note != null){
+            upsertLocal(note);
+            live.setValue(note);
+        }
 
-
-
-
-
-            // Check if there is already a poller running and cancel it if necessary
-
-
-            // Create a new MutableLiveData to hold the Note retrieved from the server
-            MutableLiveData<Note> noteMutableLiveData = new MutableLiveData<>();
-
-            // Schedule a task to run at a fixed rate to poll the server
-
-                // Retrieve the latest Note from the server
-                // TODO: Implement server request to retrieve latest Note
-
-            Note note = api.getNote(title);
-            if (note != null){
-                upsertLocal(note);
-                noteMutableLiveData.setValue(note);
-
+        ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+        executorService.scheduleAtFixedRate(() -> {
+            Note updatedNote = api.getNote(title);
+            if (updatedNote != null) {
+                upsertLocal(updatedNote);
+                live.postValue(updatedNote);
             }
-
-            ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
-            executorService.scheduleAtFixedRate(() -> {
-                Note updateNote = api.getNote(title);
-                if(updateNote != null){
-                    upsertLocal(updateNote);
-                    noteMutableLiveData.postValue(updateNote);
-                }},0,3,TimeUnit.SECONDS);
-
-                return noteMutableLiveData;
-
-
-
-            }
-
-
-
-
-
-
-
+        }, 0, 3, TimeUnit.SECONDS);
+        return live;
+    }
 
     public void upsertRemote(Note note) {
         // TODO: Implement upsertRemote!
-        api.putNote(note);
-        //throw new UnsupportedOperationException("Not implemented yet");
+        String json = note.toJSON();
+        api.putNote(note.title, json);
     }
 }
