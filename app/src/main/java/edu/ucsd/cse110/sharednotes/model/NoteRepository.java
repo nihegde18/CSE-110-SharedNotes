@@ -22,6 +22,9 @@ public class NoteRepository {
     private final NoteDao dao;
     private final NoteAPI api;
 
+
+    //private ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
     public NoteRepository(NoteDao dao) {
         this.dao = dao;
         this.api = NoteAPI.provide();
@@ -116,7 +119,7 @@ public class NoteRepository {
             live.setValue(note);
         }
 
-        ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+
         executorService.scheduleAtFixedRate(() -> {
             Note updatedNote = api.getNote(title);
             if (updatedNote != null) {
@@ -129,7 +132,12 @@ public class NoteRepository {
 
     public void upsertRemote(Note note) {
         // TODO: Implement upsertRemote!
-        String json = note.toJSON();
-        api.putNote(note.title, json);
+
+
+
+        executorService.submit(()->{
+            NoteAPI.provide().putNote(note);
+        });
+      //  api.putNote(note);
     }
 }
