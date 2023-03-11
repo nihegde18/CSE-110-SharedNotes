@@ -81,8 +81,9 @@ public class NoteRepository {
 
     public void upsertLocal(Note note, boolean incrementVersion) {
         // We don't want to increment when we sync from the server, just when we save.
+
         if (incrementVersion) note.version = note.version + 1;
-        note.version = note.version + 1;
+        //note.version = note.version + 1;
         dao.upsert(note);
     }
 
@@ -135,9 +136,15 @@ public class NoteRepository {
 
 
 
-        executorService.submit(()->{
-            NoteAPI.provide().putNote(note);
-        });
+        upsertRemote(note,true);
       //  api.putNote(note);
+    }
+    public void upsertRemote(Note note , boolean incrementVersion){
+       // if (incrementVersion) note.version = note.version + 1;
+       // note.version = note.version + 1;
+        executorService.submit(()->{
+
+
+        NoteAPI.provide().putNote(note);});
     }
 }
