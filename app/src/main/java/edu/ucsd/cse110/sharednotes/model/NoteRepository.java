@@ -116,7 +116,7 @@ public class NoteRepository {
         MutableLiveData<Note> live = new MutableLiveData<>();
         Note note = api.getNote(title);
         if(note != null){
-            upsertLocal(note);
+            //upsertLocal(note);
             live.setValue(note);
         }
 
@@ -124,7 +124,7 @@ public class NoteRepository {
         executorService.scheduleAtFixedRate(() -> {
             Note updatedNote = api.getNote(title);
             if (updatedNote != null) {
-                upsertLocal(updatedNote);
+                //upsertLocal(updatedNote);
                 live.postValue(updatedNote);
             }
         }, 0, 3, TimeUnit.SECONDS);
